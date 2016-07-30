@@ -75,7 +75,7 @@ npm-outdated() {
 # Reads as 'get dirty' :)
 git-dirty() {
 	if [ "$(is-git)" = $GIT_MSG ]; then
-		if [ "$(git status)" ]; then
+		if [ "$(git status --short)" ]; then
 			echo "$(unbuffer chalk $GIT_MODIFIERS "$GIT_DIRTY")"
 		fi
 	fi
