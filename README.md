@@ -13,7 +13,7 @@ Extra features:
 
 ## Automagically!
 To install (w/npm):
-`npm install purer`
+`npm install @anirudhb/purer`
 
 ## Dependencies (Automagically installed if using npm)
 1. `apt-get install expect`
