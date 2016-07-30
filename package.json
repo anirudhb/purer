@@ -1,0 +1,19 @@
+{
+  "name": "purer",
+  "version": "1.0.0",
+  "description": "Bash port of @sindresorhus/pure.",
+  "main": "",
+  "scripts": {
+    "postinstall": "sudo apt-get install expect && sudo npm install -g chalk chalk-cli && echo \". ~/.purer\" >> .bashrc && cp prompt ~/.purer"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anirudhb/purer.git"
+  },
+  "author": "Anirudh Balaji",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/anirudhb/purer/issues"
+  },
+  "homepage": "https://github.com/anirudhb/purer#readme"
+}
