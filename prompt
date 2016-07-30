@@ -1,0 +1,196 @@
+#!/bin/bash
+
+# My prompt for bash.
+# Uses node.js (chalk) because I have it, and I cannot use bash without a colored prompt.
+
+# Prompt character copied from https://github.com/sindresorhus/pure
+PROMPT_CHAR="❯"
+
+# Git arrows also copied from https://github.com/sindresorhus/pure
+GIT_ARROW_DOWN="⇣"
+GIT_ARROW_UP="⇡"
+
+# Git, npm, and ssh constants
+GIT_MSG="GIT"
+GIT_DIRTY="*"
+GIT_MODIFIERS="bold blue"
+
+NPM_MSG="NPM"
+NPM_MODIFIERS="italic bold magenta"
+
+SSH_MSG="SSH"
+SSH_MODIFIERS="underline bold yellow"
+
+# Chalk CLI constants
+CHALK_CLI="chalk"
+CHALK_BG="bg"
+
+# Needed for relative path resolver
+RELATIVE_PATH="/"
+
+# Colors & modifiers
+IDENTITY_MODIFIERS="bold green"
+DIR_MODIFIERS="bold inverse cyan"
+PROMPT_MODIFIERS="bold blue"
+PROMPT_ERR_MODIFIERS="bold red"
+
+# Set relative path to current directory
+set-relative-path() {
+	RELATIVE_PATH=$(realpath .)
+}
+
+# Reset path (i.e. give absolute path)
+reset-relative-path() {
+	RELATIVE_PATH="/"
+}
+
+# Resolve path relative to $RELATIVE_PATH
+resolve-relative-path() {
+	echo $(echo /"$(echo $PWD | sed -e 's/'${RELATIVE_PATH//\//\\\/}'//')" | sed -e "s/\/\//\//" | sed -e 's/'${HOME//\//\\\/}'/~/')
+}
+
+# Return whether current directory is a Git repository.
+is-git() {
+	if [ "$(git status 2>&1>/dev/null;echo $?)" = "0" ]; then
+		echo $GIT_MSG
+	fi
+}
+
+# Return whether current directory is an npm project (i.e. has a package.json)
+is-npm() {
+	if [ -f "package.json" ]; then
+		echo $NPM_MSG
+	fi
+}
+
+# Return how many package.json dependencies are outdated (uses is-npm)
+npm-outdated() {
+	if [ "$(is-npm)" = $NPM_MSG ]; then
+		local deps=$(npm outdated --progress=false | sed -e "1d")
+		echo $(echo -n $deps | wc -l)
+	fi
+}
+
+# Returns whether the git repository is dirty (uses is-git)
+# Reads as 'get dirty' :)
+git-dirty() {
+	if [ "$(is-git)" = $GIT_MSG ]; then
+		if [ "$(git status)" ]; then
+			echo "$(unbuffer chalk $GIT_MODIFIERS "$GIT_DIRTY")"
+		fi
+	fi
+}
+
+# Return current git repository name (from remote URL, uses is-git)
+git-name() {
+	if [ "$(is-git)" = $GIT_MSG ]; then
+		if [ "$(git remote -v)" ]; then
+			echo $(unbuffer chalk bold $(git remote -v | head -n1 | awk '{print $2}' | sed 's/.*\///' | sed 's/\.git//'))
+		fi
+	fi
+}
+
+
+# Return 'identity' (i.e. username@hostname)
+identity() {
+	echo $(unbuffer chalk $IDENTITY_MODIFIERS "\u@\h")
+}
+
+# Returns $SSH_MSG if the user is running ssh.
+running-ssh() {
+	if [ "$SSH_CONNECTION" ]; then
+		echo $SSH_MSG
+	fi
+}
+
+# Returns checked-out branch name (uses is-git)
+git-branch() {
+	if [ "$(is-git)" = $GIT_MSG ]; then
+		echo $(git branch | grep \* | sed "s/\* //")
+	fi
+}
+
+# Returns $GIT_ARROW_UP if there are unpushed changes (uses is-git)
+git-unpushed() {
+	if [ "$(is-git)" = $GIT_MSG ]; then
+		if [ "$(git log origin/$(git-branch)..HEAD)" ]; then
+			echo $GIT_ARROW_UP
+		fi
+	fi
+}
+
+# Returns $GIT_ARROW_DOWN if there are unpulled changes (uses is-git)
+git-unpulled() {
+	if [ "$(is-git)" = $GIT_MSG ]; then
+		if [ "$(git fetch)" ]; then
+			echo $GIT_ARROW_DOWN
+		fi
+	fi
+}
+
+# Returns $PROMPT_MODIFIERS if last process exited successfully, else $PROMPT_ERR_MODIFIERS
+last-successful() {
+	if [ $? = 0 ];then
+		echo $PROMPT_MODIFIERS
+	else
+		echo $PROMPT_ERR_MODIFIERS
+	fi
+}
+
+##                 ##
+# The prompt stuff! #
+##                 ##
+
+# Create tags (e.g. [$(chalk $GIT_MSG $GIT_MODIFIERS) etc.])
+prompt-tags() {
+	local tag=()
+	if [ "$(is-git)" = $GIT_MSG ]; then
+		tag+=("$(unbuffer chalk $GIT_MODIFIERS $GIT_MSG)")
+	fi
+	if [ "$(is-npm)" = $NPM_MSG ]; then
+		tag+=("$(unbuffer chalk $NPM_MODIFIERS $NPM_MSG)")
+	fi
+	if [ "$(running-ssh)" = $SSH_MSG ]; then
+		tag+=("$(unbuffer chalk $SSH_MODIFIERS $SSH_MSG)")
+	fi
+	tag=[$(IFS=" ";echo "${tag[*]}")]
+	if [ tag = "[]" ]; then
+		tag=
+	fi
+	echo $tag
+}
+
+# Returns "n outdated packages" if $(is-npm)
+prompt-deps() {
+	if [ "$(is-npm)" = $NPM_MSG ]; then
+		echo $(unbuffer chalk bold red "$(npm-outdated) outdated package(s)")
+	fi
+}
+
+# Returns summary of all git commands
+prompt-git() {
+	local summary=()
+	summary+=($(git-branch)$(git-dirty))
+	summary+=($(git-unpushed))
+	summary+=($(git-unpulled))
+	echo $(IFS=" ";echo "${summary[*]}")
+}
+
+# THE function that puts it all together
+prompt() {
+	local promptmod="$(last-successful)"
+	local lineonearray=()
+	local linetwoarray=()
+	lineonearray+=("$(identity)")
+	lineonearray+=("$(unbuffer chalk $DIR_MODIFIERS $(resolve-relative-path))")
+	lineonearray+=("$(prompt-tags)")
+	lineonearray+=("$(prompt-git)")
+	lineonearray+=("$(prompt-deps)")
+	local lineonestring="$(IFS=" ";echo "${lineonearray[*]}")"
+	local linetwostring="$(unbuffer chalk $promptmod $PROMPT_CHAR) "
+	echo $lineonestring
+	echo "$linetwostring"
+}
+
+# Finally...
+PROMPT_COMMAND="PS1=\$(prompt)"
