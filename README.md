@@ -3,6 +3,8 @@ Bash port of sindresorhus/pure.
 
 **Synchronous checking. Terminal may be slow.**
 
+![Screenshot](https://github.com/anirudhb/purer/raw/master/Screenshot%20from%202016-07-30%2011-27-46.png)
+
 Extra features:
   * NPM check (for outdated dependencies)
   * Tags
