@@ -6,12 +6,16 @@ Bash port of sindresorhus/pure.
 ![Screenshot](https://github.com/anirudhb/purer/raw/master/Screenshot%20from%202016-07-30%2011-27-46.png)
 
 Extra features:
-  * NPM check (for outdated dependencies)
+  * npm check (for outdated dependencies)
   * Tags
   * Colored by chalk
   * Can resolve to relative path
 
-## Dependencies
+## Automagically!
+To install (w/npm):
+`npm install purer`
+
+## Dependencies (Automagically installed if using npm)
 1. `apt-get install expect`
 2. Node.js
 3. `npm install -g chalk chalk-cli`
